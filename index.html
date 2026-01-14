@@ -4,45 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RPG Party Sync (Online)</title>
-    
     <style>
-        body { 
-            font-family: sans-serif; 
-            background-color: #121212 !important; /* บังคับดำ */
-            color: #e0e0e0; 
-            padding: 20px; 
-            margin: 0; 
+        /* --- CSS ตกแต่งหน้าตา (Dark Theme) --- */
+        body { font-family: 'Sarabun', sans-serif; background-color: #121212; color: #e0e0e0; padding: 20px; margin: 0; }
+        
+        /* Status Bar */
+        #status-indicator { position: fixed; top: 10px; right: 10px; padding: 5px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; z-index: 1000; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .status-online { background: #28a745; color: white; box-shadow: 0 0 10px #28a745; }
+        .status-offline { background: #dc3545; color: white; }
+
+        /* Layout */
+        .main-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; flex-wrap: wrap; }
+        .sidebar { flex: 0 0 300px; background: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; }
+        .content-area { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px; }
+
+        h2, h3 { margin-top: 0; color: #ffcc00; }
+        input, select { background: #333; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px; }
+        input:focus { outline: 2px solid #ffcc00; }
+
+        button { cursor: pointer; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.8; }
+        .btn-green { background: #28a745; color: white; }
+        .btn-blue { background: #007bff; color: white; }
+        .btn-red { background: #dc3545; color: white; }
+        .btn-move { background: #444; color: white; padding: 2px 8px; }
+
+        /* Skill & Char Card */
+        .preset-item { background: #2a2a2a; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #007bff; display: flex; justify-content: space-between; align-items: center; }
+        .char-card { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: 0.3s; }
+        .char-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
+        .char-name { font-size: 1.3em; font-weight: bold; background: transparent; border: none; color: #ffcc00; width: 60%; }
+        .skill-row { display: flex; align-items: center; gap: 10px; background: #252525; padding: 8px; margin-bottom: 4px; border-radius: 4px; border-left: 3px solid #ffcc00; }
+        .result-area { text-align: right; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #444; }
+        .big-number { font-size: 2.5em; font-weight: bold; color: #00ff00; text-shadow: 0 0 10px rgba(0,255,0,0.2); }
+        
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .main-layout { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 300px; }
         }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { color: #ffcc00; }
-        .box { background: #333; padding: 20px; border-radius: 8px; margin-top: 20px; }
-        .btn { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
-        .status { padding: 5px 10px; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px;}
-        .online { background: #28a745; color: white; }
-        .offline { background: #dc3545; color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="status" class="status offline">Connecting...</div>
-    <h1>⚔️ RPG Party Sync</h1>
-    <p>ถ้าเห็นหน้านี้ แสดงว่า HTML/CSS ทำงานปกติครับ</p>
+    <div id="status-indicator" class="status-offline">Connecting...</div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <h2>🛠️ คลังสกิล (ส่วนกลาง)</h2>
+            <div style="background: #252525; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+                <input type="text" id="newSkillName" placeholder="ชื่อสกิล (เช่น บัพเทพ)" style="width: 90%; margin-bottom: 5px;">
+                <div style="display: flex; gap: 5px;">
+                    <select id="newSkillOp">
+                        <option value="*">คูณ (*)</option>
+                        <option value="+">บวก (+)</option>
+                        <option value="-">ลบ (-)</option>
+                        <option value="/">หาร (/)</option>
+                    </select>
+                    <input type="number" id="newSkillVal" placeholder="ค่า" style="width: 100%;">
+                </div>
+                <button class="btn-green" onclick="window.savePreset()" style="width: 100%; margin-top: 5px;">+ บันทึกเข้ากองกลาง</button>
+            </div>
+            <div id="presetList">กำลังโหลด...</div>
+            <p style="font-size: 0.8em; color: #888;">* สกิลที่นี่จะแชร์ให้เห็นทุกคน</p>
+        </div>
     
-    <div class="box">
-        <h3>รายชื่อตัวละคร (Database Test)</h3>
-        <button class="btn" onclick="testAddChar()">+ ลองกดปุ่มนี้เพื่อทดสอบ</button>
-        <div id="char-list" style="margin-top: 20px;">กำลังรอข้อมูล...</div>
+        <div class="content-area">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <h1 style="margin:0;">⚔️ Party Damage Sync</h1>
+                    <small style="color:#aaa;">ข้อมูลซิงค์กันทั่วโลก (Real-time)</small>
+                </div>
+                <button class="btn-blue" onclick="window.addCharacter()">+ เพิ่มตัวละคร</button>
+            </div>
+            <div id="charactersContainer">กำลังโหลดข้อมูล...</div>
+        </div>
     </div>
-</div>
 
 <script type="module">
-    console.log("--- เริ่มต้นการทำงานของ Script ---"); // ถ้า Console ว่าง แสดงว่า Script ไม่รัน
-
+    // Import Firebase จาก Server Google โดยตรง (ไม่ต้องลงโปรแกรมเพิ่ม)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Config ของคุณ
+    // --- ส่วนตั้งค่า (ใส่ข้อมูลของคุณให้แล้ว) ---
     const firebaseConfig = {
         apiKey: "AIzaSyBEw0zATJP-H1fFR6Lp979Q_z1xSV2q2ys",
         authDomain: "jtg-01t.firebaseapp.com",
@@ -54,48 +98,242 @@
         measurementId: "G-PN807S1Y1H"
     };
 
-    try {
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        console.log("Firebase Initialized!");
+    // เริ่มต้นระบบ
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        const dbRef = ref(db, 'testConnect');
+    // ตัวแปรเก็บข้อมูล
+    let presets = [];
+    let characters = [];
 
-        // ฟังข้อมูล
-        onValue(dbRef, (snapshot) => {
-            console.log("ได้รับข้อมูลจาก Database:", snapshot.val());
-            document.getElementById('status').innerText = "🟢 Online Connected!";
-            document.getElementById('status').className = "status online";
-            
-            const data = snapshot.val();
-            const listDiv = document.getElementById('char-list');
-            
-            if(data) {
-                listDiv.innerHTML = "ข้อมูลล่าสุด: " + JSON.stringify(data);
-            } else {
-                listDiv.innerHTML = "เชื่อมต่อได้แล้ว (แต่ยังไม่มีข้อมูล)";
-            }
-        }, (error) => {
-            console.error("Firebase Error:", error);
-            document.getElementById('status').innerText = "🔴 Error: " + error.message;
+    // --- 1. ฟังข้อมูลจาก Cloud (Real-time) ---
+    const dbRef = ref(db, 'gameData');
+    
+    onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        // เปลี่ยนสถานะเป็นสีเขียว
+        const statusEl = document.getElementById('status-indicator');
+        statusEl.className = 'status-online';
+        statusEl.innerText = '🟢 Online Sync';
+
+        // อัปเดตข้อมูลในเครื่องให้ตรงกับ Cloud
+        if (data) {
+            presets = data.presets || [];
+            characters = data.characters || [];
+        } else {
+            presets = [];
+            characters = [];
+        }
+        
+        // วาดหน้าจอใหม่
+        renderPresets();
+        renderAllChars();
+    }, (error) => {
+        console.error(error);
+        const statusEl = document.getElementById('status-indicator');
+        statusEl.className = 'status-offline';
+        statusEl.innerText = '🔴 Disconnected';
+    });
+
+    // --- 2. ฟังก์ชันส่งข้อมูลขึ้น Cloud ---
+    
+    window.savePreset = () => {
+        const name = document.getElementById('newSkillName').value;
+        const op = document.getElementById('newSkillOp').value;
+        const val = parseFloat(document.getElementById('newSkillVal').value);
+
+        if (!name || isNaN(val)) return alert("กรอกข้อมูลให้ครบก่อนครับ");
+
+        // ส่งข้อมูลใหม่ไปทับของเก่า
+        const newPresets = [...presets, { id: Date.now(), name, op, val }];
+        set(ref(db, 'gameData/presets'), newPresets);
+        
+        document.getElementById('newSkillName').value = '';
+    }
+
+    window.deletePreset = (index) => {
+        if(!confirm("ลบสกิลนี้จากกองกลาง?")) return;
+        const newPresets = [...presets];
+        newPresets.splice(index, 1);
+        set(ref(db, 'gameData/presets'), newPresets);
+    }
+
+    window.addCharacter = () => {
+        const newChars = [...characters, {
+            id: Date.now(),
+            name: "ตัวละครใหม่",
+            baseDmg: 0,
+            stack: []
+        }];
+        set(ref(db, 'gameData/characters'), newChars);
+    }
+
+    window.removeCharacter = (id) => {
+        if(!confirm("ลบตัวละครนี้?")) return;
+        const newChars = characters.filter(c => c.id !== id);
+        set(ref(db, 'gameData/characters'), newChars);
+    }
+
+    window.updateCharName = (id, newName) => {
+        const index = characters.findIndex(c => c.id === id);
+        if (index !== -1) {
+            set(ref(db, `gameData/characters/${index}/name`), newName);
+        }
+    }
+
+    window.updateBaseDmg = (id, newVal) => {
+        const index = characters.findIndex(c => c.id === id);
+        if (index !== -1) {
+            set(ref(db, `gameData/characters/${index}/baseDmg`), parseFloat(newVal));
+        }
+    }
+
+    window.addSkillToChar = (charId) => {
+        const selectBox = document.getElementById(`select-skill-${charId}`);
+        const presetIndex = selectBox.value;
+        if (presetIndex === "") return;
+
+        const charIndex = characters.findIndex(c => c.id === charId);
+        if (charIndex === -1) return;
+
+        const skill = presets[presetIndex];
+        const currentStack = characters[charIndex].stack || [];
+        const newStack = [...currentStack, { ...skill, uid: Date.now() }];
+
+        set(ref(db, `gameData/characters/${charIndex}/stack`), newStack);
+    }
+
+    window.removeSkillFromChar = (charId, skillIndex) => {
+        const charIndex = characters.findIndex(c => c.id === charId);
+        const stack = characters[charIndex].stack || [];
+        stack.splice(skillIndex, 1);
+        set(ref(db, `gameData/characters/${charIndex}/stack`), stack);
+    }
+
+    window.moveSkillOrder = (charId, skillIndex, direction) => {
+        const charIndex = characters.findIndex(c => c.id === charId);
+        const stack = [...(characters[charIndex].stack || [])];
+        
+        if (skillIndex + direction >= 0 && skillIndex + direction < stack.length) {
+            const temp = stack[skillIndex];
+            stack[skillIndex] = stack[skillIndex + direction];
+            stack[skillIndex + direction] = temp;
+            set(ref(db, `gameData/characters/${charIndex}/stack`), stack);
+        }
+    }
+
+    // --- 3. ฟังก์ชันแสดงผลหน้าจอ (Render) ---
+    function renderPresets() {
+        const list = document.getElementById('presetList');
+        list.innerHTML = '';
+        if(!presets.length) { list.innerHTML = '<div style="color:#555; text-align:center;">ยังไม่มีสกิลกลาง</div>'; return; }
+
+        presets.forEach((p, i) => {
+            let symbol = p.op === '*' ? 'x' : p.op;
+            list.innerHTML += `
+                <div class="preset-item">
+                    <span>${p.name} <span style="color:#aaa;">(${symbol}${p.val})</span></span>
+                    <button class="btn-red" style="padding: 2px 6px; font-size:0.8em;" onclick="window.deletePreset(${i})">X</button>
+                </div>
+            `;
         });
+    }
 
-        // ฟังก์ชันทดสอบเขียน
-        window.testAddChar = () => {
-            console.log("กำลังส่งข้อมูล...");
-            set(ref(db, 'testConnect'), {
-                msg: "Hello from Web!",
-                time: new Date().toISOString()
-            }).then(() => {
-                alert("ส่งข้อมูลสำเร็จ! ดูหน้าจอว่าเปลี่ยนไหม");
-            }).catch((err) => {
-                alert("ส่งไม่ผ่าน: " + err.message);
-            });
+    function calculateChar(char) {
+        let current = char.baseDmg || 0;
+        let stack = char.stack || [];
+        stack.forEach(s => {
+            if (s.op === '+') current += s.val;
+            if (s.op === '-') current -= s.val;
+            if (s.op === '*') current *= s.val;
+            if (s.op === '/') current /= s.val;
+        });
+        return Math.floor(current);
+    }
+
+    function renderAllChars() {
+        const container = document.getElementById('charactersContainer');
+        const activeElementId = document.activeElement ? document.activeElement.id : null; // จำว่าเคอร์เซอร์อยู่ที่ไหน
+        
+        container.innerHTML = '';
+        if(!characters.length) {
+            container.innerHTML = '<div style="color:#555; text-align:center; padding: 20px;">ยังไม่มีตัวละครในปาร์ตี้</div>';
+            return;
         }
 
-    } catch (e) {
-        console.error("Script Crash:", e);
-        alert("Script Error: " + e.message);
+        characters.forEach((char) => {
+            const finalDmg = calculateChar(char);
+            
+            // สร้างตัวเลือกสกิล
+            let options = `<option value="">-- เลือกสกิลกดใส่ --</option>`;
+            presets.forEach((p, idx) => {
+                let symbol = p.op === '*' ? 'x' : p.op;
+                options += `<option value="${idx}">${p.name} (${symbol}${p.val})</option>`;
+            });
+
+            // สร้างรายการสกิลในตัว
+            let stackHtml = '';
+            const stack = char.stack || [];
+            if (stack.length === 0) {
+                stackHtml = `<div style="text-align:center; color:#555; padding:10px;">ยังไม่มีบัพ/ดีบัพ</div>`;
+            } else {
+                stack.forEach((s, idx) => {
+                    let symbol = s.op === '*' ? 'x' : s.op;
+                    stackHtml += `
+                        <div class="skill-row">
+                            <span style="font-weight:bold; color:#ffcc00; width:20px;">${idx+1}.</span>
+                            <div style="flex:1;">
+                                <div>${s.name}</div>
+                                <div style="font-size:0.8em; color:#aaa;">${symbol} ${s.val}</div>
+                            </div>
+                            <div>
+                                <button class="btn-move" onclick="window.moveSkillOrder(${char.id}, ${idx}, -1)">▲</button>
+                                <button class="btn-move" onclick="window.moveSkillOrder(${char.id}, ${idx}, 1)">▼</button>
+                                <button class="btn-red" style="padding:2px 6px;" onclick="window.removeSkillFromChar(${char.id}, ${idx})">X</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const html = `
+                <div class="char-card" id="card-${char.id}">
+                    <div class="char-header">
+                        <input type="text" id="name-${char.id}" class="char-name" value="${char.name}" 
+                               onchange="window.updateCharName(${char.id}, this.value)">
+                        <button class="btn-red" onclick="window.removeCharacter(${char.id})">ลบ</button>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <div style="flex:1;">
+                            <label style="font-size:0.8em; color:#aaa;">Base Dmg</label>
+                            <input type="number" id="base-${char.id}" value="${char.baseDmg || ''}" placeholder="0" 
+                                   style="width:100%; font-size:1.2em;" 
+                                   onchange="window.updateBaseDmg(${char.id}, this.value)">
+                        </div>
+                        <div style="flex:2; display:flex; align-items:flex-end; gap:5px;">
+                            <select id="select-skill-${char.id}" style="flex:1;">${options}</select>
+                            <button class="btn-green" onclick="window.addSkillToChar(${char.id})">โปะ!</button>
+                        </div>
+                    </div>
+
+                    <div style="background:#1a1a1a; padding:5px; border-radius:4px; min-height:50px;">${stackHtml}</div>
+
+                    <div class="result-area">
+                        <span style="color:#aaa;">Damage สุทธิ:</span>
+                        <div class="big-number">${finalDmg.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+
+        // คืนเคอร์เซอร์ไปที่เดิม (แก้ปัญหากระตุกเวลาพิมพ์)
+        if(activeElementId) {
+            const el = document.getElementById(activeElementId);
+            if(el) el.focus();
+        }
     }
 </script>
 
